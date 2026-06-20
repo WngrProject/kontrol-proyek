@@ -1,5 +1,5 @@
 {
-  "name": "My Proyek",
+  "name": "Pantau Proyek",
   "description": "Dashboard monitoring proyek, absensi, material, dan keuangan.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
