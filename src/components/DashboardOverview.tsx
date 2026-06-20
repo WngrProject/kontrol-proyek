@@ -18,9 +18,10 @@ interface DashboardOverviewProps {
 // Custom Tooltip component for Recharts
 const CustomChartTooltip = ({ active, payload, label, formatter }: any) => {
   if (active && payload && payload.length) {
+    const titleText = payload[0]?.payload?.fullName || label;
     return (
-      <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-100 dark:border-slate-800 p-3.5 shadow-xl rounded-xl space-y-1.5 backdrop-blur-md">
-        <p className="text-slate-900 dark:text-slate-100 font-bold text-xs">{label}</p>
+      <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-100 dark:border-slate-800 p-3.5 shadow-xl rounded-xl space-y-1.5 backdrop-blur-md max-w-xs sm:max-w-sm md:max-w-md break-words">
+        <p className="text-slate-900 dark:text-slate-100 font-bold text-xs">{titleText}</p>
         <div className="space-y-0.5">
           {payload.map((item: any, idx: number) => (
             <p key={idx} className="text-xs font-semibold flex items-center gap-1.5" style={{ color: item.color }}>
