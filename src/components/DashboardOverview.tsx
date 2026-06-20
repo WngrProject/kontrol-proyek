@@ -418,8 +418,8 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
                       data={chartStatusData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      innerRadius={80}
+                      outerRadius={105}
                       paddingAngle={4}
                       dataKey="value"
                     >
