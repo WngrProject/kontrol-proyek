@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, 
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, CartesianGrid
@@ -34,6 +34,37 @@ const CustomChartTooltip = ({ active, payload, label, formatter }: any) => {
     );
   }
   return null;
+};
+
+interface AnimatedCounterProps {
+  value: number;
+  duration?: number;
+  formatter?: (v: number) => string;
+}
+
+const AnimatedCounter = ({ value, duration = 1000, formatter }: AnimatedCounterProps) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animFrameId: number;
+    const animate = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setCount(ease * value);
+      if (progress < 1) {
+        animFrameId = requestAnimationFrame(animate);
+      } else {
+        setCount(value);
+      }
+    };
+    animFrameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animFrameId);
+  }, [value, duration]);
+
+  return <span>{formatter ? formatter(count) : Math.round(count).toLocaleString("id-ID")}</span>;
 };
 
 export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelectView }: DashboardOverviewProps) {
@@ -197,7 +228,9 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold tracking-widest text-[#0d6efd] uppercase">TOTAL PROYEK</span>
-              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">{kpis.totalProj}</h4>
+              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
+                <AnimatedCounter value={kpis.totalProj} />
+              </h4>
             </div>
             <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-[#0d6efd]">
               <Briefcase className="w-5 h-5" />
@@ -211,13 +244,17 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold tracking-widest text-[#198754] uppercase">PROYEK SELESAI</span>
-              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">{kpis.lunas}</h4>
+              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
+                <AnimatedCounter value={kpis.lunas} />
+              </h4>
             </div>
             <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded text-[#198754]">
               <CheckCircle className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2.5">{kpis.lunasPct.toFixed(1)}% Rasio penyelesaian selesai</p>
+          <p className="text-[11px] text-slate-400 mt-2.5">
+            <AnimatedCounter value={kpis.lunasPct} formatter={v => v.toFixed(1) + "%"} /> Rasio penyelesaian selesai
+          </p>
         </div>
 
         {/* KPI 3 - Warning Border Left */}
@@ -225,13 +262,17 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold tracking-widest text-amber-500 uppercase">PROYEK BERJALAN</span>
-              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">{kpis.berjalan}</h4>
+              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
+                <AnimatedCounter value={kpis.berjalan} />
+              </h4>
             </div>
             <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-500">
               <Clock className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2.5">{kpis.berjalanPct.toFixed(1)}% Aktif dalam pembangunan fisik</p>
+          <p className="text-[11px] text-slate-400 mt-2.5">
+            <AnimatedCounter value={kpis.berjalanPct} formatter={v => v.toFixed(1) + "%"} /> Aktif dalam pembangunan fisik
+          </p>
         </div>
 
         {/* KPI 4 - Info Border Left */}
@@ -239,7 +280,9 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold tracking-widest text-cyan-600 dark:text-cyan-400 uppercase">PROYEK INVOICE</span>
-              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">{kpis.invCount}</h4>
+              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
+                <AnimatedCounter value={kpis.invCount} />
+              </h4>
             </div>
             <div className="p-2 bg-cyan-55/10 rounded text-cyan-500">
               <FileSpreadsheet className="w-5 h-5" />
@@ -256,7 +299,9 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Total Nilai SPK</span>
-              <h4 className="text-lg font-bold text-slate-800 dark:text-white leading-none">{formatRp(kpis.spkSum)}</h4>
+              <h4 className="text-lg font-bold text-slate-800 dark:text-white leading-none">
+                <AnimatedCounter value={kpis.spkSum} formatter={formatRp} />
+              </h4>
             </div>
             <div className="p-2 bg-slate-100 dark:bg-slate-750 rounded text-slate-600 dark:text-slate-350">
               <FileText className="w-5 h-5" />
@@ -270,13 +315,17 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Total Terbayar</span>
-              <h4 className="text-lg font-bold text-[#198754] leading-none">{formatRp(kpis.terbayarSum)}</h4>
+              <h4 className="text-lg font-bold text-[#198754] leading-none">
+                <AnimatedCounter value={kpis.terbayarSum} formatter={formatRp} />
+              </h4>
             </div>
             <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded text-[#198754]">
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2.5">{kpis.terbayarPct.toFixed(1)}% Realisasi terbayar</p>
+          <p className="text-[11px] text-slate-400 mt-2.5">
+            <AnimatedCounter value={kpis.terbayarPct} formatter={v => v.toFixed(1) + "%"} /> Realisasi terbayar
+          </p>
         </div>
 
         {/* KPI 7 */}
@@ -284,7 +333,9 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Total Tagihan</span>
-              <h4 className="text-lg font-bold text-[#0d6efd] leading-none">{formatRp(kpis.tagihanSum)}</h4>
+              <h4 className="text-lg font-bold text-[#0d6efd] leading-none">
+                <AnimatedCounter value={kpis.tagihanSum} formatter={formatRp} />
+              </h4>
             </div>
             <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-[#0d6efd]">
               <Scale className="w-5 h-5" />
@@ -298,7 +349,9 @@ export default function DashboardOverview({ proyek, pembayaran, tagihan, onSelec
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Total Pembayaran</span>
-              <h4 className="text-lg font-bold text-amber-500 leading-none">{formatRp(kpis.pembayaranSum)}</h4>
+              <h4 className="text-lg font-bold text-amber-500 leading-none">
+                <AnimatedCounter value={kpis.pembayaranSum} formatter={formatRp} />
+              </h4>
             </div>
             <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-amber-500">
               <Wallet className="w-5 h-5" />

@@ -183,7 +183,9 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
         "Tanggal", "Nama Karyawan", "NIK", "Nama PM", "Lokasi Kerja",
         "Keterangan/Project", "Check In", "Check Out", "Total Jam Kerja", "Status"
       ];
-    } else if (viewId === "jrp-jobj-spk" || viewId.endsWith("-spk")) {
+    } else if (viewId === "jrp-jobj-spk") {
+      return ["Nama Cluster", "Tipe", "HP BoQ", "Zona", "Nilai BoQ", "Bobot", "Keterangan"];
+    } else if (viewId.endsWith("-spk")) {
       return viewId.startsWith("surge-") 
         ? ["DAOP", "Segmen", "FO 48c", "FO 96c", "Total FO", "BoQ Ext Pole", "Bobot", "Keterangan"]
         : ["Item Pekerjaan", "Satuan", "Harga Satuan", "Volume BoQ", "Total Nilai BoQ", "Bobot", "Keterangan"];
@@ -585,6 +587,13 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
         m3 = { label: "Volume Mobilisasi", value: volSum.toLocaleString("id-ID") + " Unit", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
         m4 = { label: "Gudang Terlibat", value: String(new Set(filteredAndSortedData.map(r => r["Gudang"]).filter(Boolean)).size) + " Gudang", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
       }
+    } else if (viewId === "jrp-jobj-spk") {
+      const spkSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai BoQ"]), 0);
+      const totalCluster = String(new Set(filteredAndSortedData.map(r => r["Nama Cluster"]).filter(Boolean)).size);
+      const bobotSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Bobot"]), 0);
+      m2 = { label: "Total Nilai BoQ", value: "Rp " + formatCurrency(spkSum), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+      m3 = { label: "Total Cluster", value: totalCluster + " Cluster", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+      m4 = { label: "Bobot Kumulatif", value: bobotSum.toFixed(2) + "%", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
     } else if (viewId.endsWith("-spk") || viewId.endsWith("-boq") || viewId.endsWith("-rekon")) {
       const isRekon = viewId.endsWith("-rekon");
       const isSpk = viewId.endsWith("-spk");
