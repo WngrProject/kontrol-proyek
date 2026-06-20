@@ -968,10 +968,10 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
                           cellStyle = "text-center whitespace-nowrap";
                         } else if (h.toLowerCase().includes("nilai") || h.toLowerCase().includes("harga") || h.toLowerCase().includes("pembayaran") || h.toLowerCase().includes("total") || h === "HP BoQ") {
                           contentToRender = <span className="font-semibold text-slate-900 dark:text-white">{formatCurrency(val)}</span>;
-                          cellStyle = "text-right font-mono whitespace-nowrap";
+                          cellStyle = "text-right whitespace-nowrap";
                         } else if (h === "Bobot") {
                           contentToRender = <span className="font-bold text-slate-800 dark:text-slate-200">{formatPercent(val)}</span>;
-                          cellStyle = "text-right font-mono whitespace-nowrap";
+                          cellStyle = "text-right whitespace-nowrap";
                         } else if (h.startsWith("Status")) {
                           contentToRender = (
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getStatusBadgeClass(val)}`}>
@@ -1049,7 +1049,7 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
                         } else {
                           output = formatCurrency(tableFooters[h]);
                         }
-                        style = "text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap";
+                        style = "text-right text-blue-600 dark:text-blue-400 whitespace-nowrap";
                       }
 
                       return (
