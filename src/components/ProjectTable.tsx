@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Search, Eye, Edit3, Trash2, ArrowUpDown, ChevronLeft, ChevronRight, 
   Settings, Download, RefreshCw, AlertCircle, X, Check, FileDown,
@@ -9,6 +9,36 @@ import { FilterState, SortState } from "../types";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+
+interface AnimatedCounterProps {
+  value: number;
+  duration?: number;
+  formatter?: (v: number) => string;
+}
+
+const AnimatedCounter = ({ value, duration = 1000, formatter }: AnimatedCounterProps) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animFrameId: number;
+    const animate = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setCount(ease * value);
+      if (progress < 1) {
+        animFrameId = requestAnimationFrame(animate);
+      } else {
+        setCount(value);
+      }
+    };
+    animFrameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animFrameId);
+  }, [value, duration]);
+
+  return <span>{formatter ? formatter(count) : Math.round(count).toLocaleString("id-ID")}</span>;
+};
 
 interface ProjectTableProps {
   data: any[];
@@ -523,33 +553,42 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
   };
 
   const paneMetrics = useMemo(() => {
-    let m1 = { label: "Total Data Terdisplay", value: String(filteredAndSortedData.length) + " Baris", icon: "Database", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-    let m2 = { label: "Total Nilai SPK", value: "-", icon: "Briefcase", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
-    let m3 = { label: "Total Terbayar", value: "-", icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
-    let m4 = { label: "Sisa Tagihan", value: "-", icon: "AlertCircle", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
+    let m1 = { 
+      label: "Total Data Terdisplay", 
+      value: String(filteredAndSortedData.length) + " Baris", 
+      numericValue: filteredAndSortedData.length,
+      formatter: (v: number) => Math.round(v) + " Baris",
+      icon: "Database", 
+      color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" 
+    };
+    let m2: { label: string; value: string; icon: string; color: string; numericValue?: number; formatter?: (v: number) => string } = { label: "Total Nilai SPK", value: "-", icon: "Briefcase", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+    let m3: { label: string; value: string; icon: string; color: string; numericValue?: number; formatter?: (v: number) => string } = { label: "Total Terbayar", value: "-", icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+    let m4: { label: string; value: string; icon: string; color: string; numericValue?: number; formatter?: (v: number) => string } = { label: "Sisa Tagihan", value: "-", icon: "AlertCircle", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
 
     if (viewId === "semua-proyek") {
       const spkSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai SPK"]), 0);
       const paidSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai Terbayar"]), 0);
-      m2 = { label: "Total Nilai SPK", value: "Rp " + formatCurrency(spkSum), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-      m3 = { label: "Sudah Terbayar", value: "Rp " + formatCurrency(paidSum), icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
-      m4 = { label: "Sisa SPK Belum Bayar", value: "Rp " + formatCurrency(Math.max(0, spkSum - paidSum)), icon: "AlertCircle", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
+      m2 = { label: "Total Nilai SPK", value: "Rp " + formatCurrency(spkSum), numericValue: spkSum, formatter: v => "Rp " + formatCurrency(v), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+      m3 = { label: "Sudah Terbayar", value: "Rp " + formatCurrency(paidSum), numericValue: paidSum, formatter: v => "Rp " + formatCurrency(v), icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+      m4 = { label: "Sisa SPK Belum Bayar", value: "Rp " + formatCurrency(Math.max(0, spkSum - paidSum)), numericValue: Math.max(0, spkSum - paidSum), formatter: v => "Rp " + formatCurrency(v), icon: "AlertCircle", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
     } else if (viewId === "daftar-pembayaran") {
       const paySum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai Pembayaran"]), 0);
-      m2 = { label: "Total Pembayaran", value: "Rp " + formatCurrency(paySum), icon: "Landmark", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
-      m3 = { label: "Bulan Ini", value: String(filteredAndSortedData.filter(r => {
+      m2 = { label: "Total Pembayaran", value: "Rp " + formatCurrency(paySum), numericValue: paySum, formatter: v => "Rp " + formatCurrency(v), icon: "Landmark", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+      const thisMonthCount = filteredAndSortedData.filter(r => {
         const dStr = r["Tanggal Pembayaran"];
         if (!dStr) return false;
         const d = dStr.seconds ? new Date(dStr.seconds * 1000) : new Date(dStr);
         return d && d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
-      }).length) + " Transaksi", icon: "TrendingUp", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-      m4 = { label: "Rata-rata Transaksi", value: "Rp " + formatCurrency(filteredAndSortedData.length ? paySum / filteredAndSortedData.length : 0), icon: "Sparkles", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+      }).length;
+      m3 = { label: "Bulan Ini", value: String(thisMonthCount) + " Transaksi", numericValue: thisMonthCount, formatter: v => Math.round(v) + " Transaksi", icon: "TrendingUp", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+      const avgPay = filteredAndSortedData.length ? paySum / filteredAndSortedData.length : 0;
+      m4 = { label: "Rata-rata Transaksi", value: "Rp " + formatCurrency(avgPay), numericValue: avgPay, formatter: v => "Rp " + formatCurrency(v), icon: "Sparkles", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
     } else if (viewId === "daftar-tagihan") {
       const invoiceSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai Invoice"]), 0);
       const paidSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai Pembayaran"]), 0);
-      m2 = { label: "Total Nilai Invoice", value: "Rp " + formatCurrency(invoiceSum), icon: "FileText", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-      m3 = { label: "Nilai Terbayar", value: "Rp " + formatCurrency(paidSum), icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
-      m4 = { label: "Sisa Piutang", value: "Rp " + formatCurrency(Math.max(0, invoiceSum - paidSum)), icon: "AlertCircle", color: "text-red-500 bg-red-50/70 dark:bg-red-950/30" };
+      m2 = { label: "Total Nilai Invoice", value: "Rp " + formatCurrency(invoiceSum), numericValue: invoiceSum, formatter: v => "Rp " + formatCurrency(v), icon: "FileText", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+      m3 = { label: "Nilai Terbayar", value: "Rp " + formatCurrency(paidSum), numericValue: paidSum, formatter: v => "Rp " + formatCurrency(v), icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+      m4 = { label: "Sisa Piutang", value: "Rp " + formatCurrency(Math.max(0, invoiceSum - paidSum)), numericValue: Math.max(0, invoiceSum - paidSum), formatter: v => "Rp " + formatCurrency(v), icon: "AlertCircle", color: "text-red-500 bg-red-50/70 dark:bg-red-950/30" };
     } else if (viewId === "daftar-karyawan" || viewId === "daftar-pelaksana") {
       const currentLabel = viewId === "daftar-karyawan" ? "Karyawan" : "Pelaksana";
       const countByWorkplace: Record<string, number> = {};
@@ -558,9 +597,10 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
         countByWorkplace[area] = (countByWorkplace[area] || 0) + 1;
       });
       const topArea = Object.entries(countByWorkplace).sort((a,b) => b[1]-a[1])[0];
-      m2 = { label: `Total Staf ${currentLabel}`, value: String(filteredAndSortedData.length) + " Orang", icon: "Users", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+      m2 = { label: `Total Staf ${currentLabel}`, value: String(filteredAndSortedData.length) + " Orang", numericValue: filteredAndSortedData.length, formatter: v => Math.round(v) + " Orang", icon: "Users", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
       m3 = { label: "Sektor Terpadat", value: topArea ? `${topArea[0]} (${topArea[1]} org)` : "-", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
-      m4 = { label: "Lengkap Dokumen", value: String(filteredAndSortedData.filter(r => r["URL Dokumen"] && r["URL Dokumen"] !== "-").length) + " Orang", icon: "FileSpreadsheet", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+      const docCount = filteredAndSortedData.filter(r => r["URL Dokumen"] && r["URL Dokumen"] !== "-").length;
+      m4 = { label: "Lengkap Dokumen", value: String(docCount) + " Orang", numericValue: docCount, formatter: v => Math.round(v) + " Orang", icon: "FileSpreadsheet", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
     } else if (viewId === "daftar-absensi") {
       const total = filteredAndSortedData.length;
       const hadir = filteredAndSortedData.filter(r => String(r["Status"] || "").toLowerCase().includes("hadir")).length;
@@ -568,32 +608,35 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
         const statusStr = String(r["Status"] || "").toLowerCase();
         return statusStr.includes("izin") || statusStr.includes("sakit");
       }).length;
-      m2 = { label: "Kehadiran Staf", value: String(hadir) + " Hadir", icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
-      m3 = { label: "Tingkat Kehadiran", value: total ? ((hadir / total) * 105).toFixed(1).replace("105", "100") + "%" : "0.0%", icon: "TrendingUp", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-      m4 = { label: "Izin / Absen", value: String(izin) + " Orang", icon: "Clock", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
+      m2 = { label: "Kehadiran Staf", value: String(hadir) + " Hadir", numericValue: hadir, formatter: v => Math.round(v) + " Hadir", icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+      const presenceRate = total ? Math.min(100, (hadir / total) * 100) : 0;
+      m3 = { label: "Tingkat Kehadiran", value: presenceRate.toFixed(1) + "%", numericValue: presenceRate, formatter: v => v.toFixed(1) + "%", icon: "TrendingUp", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+      m4 = { label: "Izin / Absen", value: String(izin) + " Orang", numericValue: izin, formatter: v => Math.round(v) + " Orang", icon: "Clock", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
     } else if (viewId.endsWith("-material") || viewId.endsWith("-bon-material")) {
       const isBon = viewId.endsWith("-bon-material");
       const volSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Volume"]), 0);
       if (!isBon) {
         const totalHarga = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Total Harga"]), 0);
-        m2 = { label: "Total Nilai PO", value: "Rp " + formatCurrency(totalHarga), icon: "HardHat", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
-        m3 = { label: "Total Volume PO", value: volSum.toLocaleString("id-ID") + " Unit", icon: "TrendingUp", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
-        m4 = { label: "Status Terkirim", value: String(filteredAndSortedData.filter(r => {
+        m2 = { label: "Total Nilai PO", value: "Rp " + formatCurrency(totalHarga), numericValue: totalHarga, formatter: v => "Rp " + formatCurrency(v), icon: "HardHat", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
+        m3 = { label: "Total Volume PO", value: volSum.toLocaleString("id-ID") + " Unit", numericValue: volSum, formatter: v => Math.round(v).toLocaleString("id-ID") + " Unit", icon: "TrendingUp", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+        const receivedCount = filteredAndSortedData.filter(r => {
           const mStr = String(r["Status Material"] || "").toLowerCase();
           return mStr.includes("received") || mStr.includes("diterima");
-        }).length) + " PO", icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+        }).length;
+        m4 = { label: "Status Terkirim", value: String(receivedCount) + " PO", numericValue: receivedCount, formatter: v => Math.round(v) + " PO", icon: "CheckCircle", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
       } else {
-        m2 = { label: "Total Surat Jalan", value: String(filteredAndSortedData.length) + " Record", icon: "FileText", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-        m3 = { label: "Volume Mobilisasi", value: volSum.toLocaleString("id-ID") + " Unit", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
-        m4 = { label: "Gudang Terlibat", value: String(new Set(filteredAndSortedData.map(r => r["Gudang"]).filter(Boolean)).size) + " Gudang", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+        m2 = { label: "Total Surat Jalan", value: String(filteredAndSortedData.length) + " Record", numericValue: filteredAndSortedData.length, formatter: v => Math.round(v) + " Record", icon: "FileText", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+        m3 = { label: "Volume Mobilisasi", value: volSum.toLocaleString("id-ID") + " Unit", numericValue: volSum, formatter: v => Math.round(v).toLocaleString("id-ID") + " Unit", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+        const gudangCount = new Set(filteredAndSortedData.map(r => r["Gudang"]).filter(Boolean)).size;
+        m4 = { label: "Gudang Terlibat", value: String(gudangCount) + " Gudang", numericValue: gudangCount, formatter: v => Math.round(v) + " Gudang", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
       }
     } else if (viewId === "jrp-jobj-spk") {
       const spkSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai BoQ"]), 0);
-      const totalCluster = String(new Set(filteredAndSortedData.map(r => r["Nama Cluster"]).filter(Boolean)).size);
+      const totalCluster = new Set(filteredAndSortedData.map(r => r["Nama Cluster"]).filter(Boolean)).size;
       const bobotSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Bobot"]), 0);
-      m2 = { label: "Total Nilai BoQ", value: "Rp " + formatCurrency(spkSum), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-      m3 = { label: "Total Cluster", value: totalCluster + " Cluster", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
-      m4 = { label: "Bobot Kumulatif", value: bobotSum.toFixed(2) + "%", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+      m2 = { label: "Total Nilai BoQ", value: "Rp " + formatCurrency(spkSum), numericValue: spkSum, formatter: v => "Rp " + formatCurrency(v), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+      m3 = { label: "Total Cluster", value: String(totalCluster) + " Cluster", numericValue: totalCluster, formatter: v => Math.round(v) + " Cluster", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+      m4 = { label: "Bobot Kumulatif", value: bobotSum.toFixed(2) + "%", numericValue: bobotSum, formatter: v => v.toFixed(2) + "%", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
     } else if (viewId.endsWith("-spk") || viewId.endsWith("-boq") || viewId.endsWith("-rekon")) {
       const isRekon = viewId.endsWith("-rekon");
       const isSpk = viewId.endsWith("-spk");
@@ -601,16 +644,19 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
       
       if (isSurge) {
         const totFO = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Total FO"]), 0);
-        m2 = { label: "Total Realisasi FO", value: totFO.toLocaleString("id-ID") + " m", icon: "TrendingUp", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-        m3 = { label: "Ext Pole Required", value: filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["BoQ Ext Pole"]), 0).toLocaleString("id-ID") + " Unit", icon: "AlertCircle", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
-        m4 = { label: "Alokasi Segmen", value: String(new Set(filteredAndSortedData.map(r => r["Segmen"]).filter(Boolean)).size) + " Segmen", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+        m2 = { label: "Total Realisasi FO", value: totFO.toLocaleString("id-ID") + " m", numericValue: totFO, formatter: v => Math.round(v).toLocaleString("id-ID") + " m", icon: "TrendingUp", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+        const extPole = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["BoQ Ext Pole"]), 0);
+        m3 = { label: "Ext Pole Required", value: extPole.toLocaleString("id-ID") + " Unit", numericValue: extPole, formatter: v => Math.round(v).toLocaleString("id-ID") + " Unit", icon: "AlertCircle", color: "text-amber-500 bg-amber-50/70 dark:bg-amber-950/30" };
+        const segmenCount = new Set(filteredAndSortedData.map(r => r["Segmen"]).filter(Boolean)).size;
+        m4 = { label: "Alokasi Segmen", value: String(segmenCount) + " Segmen", numericValue: segmenCount, formatter: v => Math.round(v) + " Segmen", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
       } else {
         const priceCol = isRekon ? "Total Nilai Rekon" : "Total Nilai BoQ";
         const sumVal = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r[priceCol]), 0);
         const totalItems = filteredAndSortedData.length;
-        m2 = { label: isRekon ? "Total Nilai Rekon" : "Total Nilai BoQ", value: "Rp " + formatCurrency(sumVal), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
-        m3 = { label: "Kategori Item", value: String(totalItems) + " Item Pekerjaan", icon: "List", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
-        m4 = { label: "Bobot Kumulatif", value: (filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Bobot"]), 0) * 100).toFixed(2) + "%", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
+        m2 = { label: isRekon ? "Total Nilai Rekon" : "Total Nilai BoQ", value: "Rp " + formatCurrency(sumVal), numericValue: sumVal, formatter: v => "Rp " + formatCurrency(v), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
+        m3 = { label: "Kategori Item", value: String(totalItems) + " Item Pekerjaan", numericValue: totalItems, formatter: v => Math.round(v) + " Item Pekerjaan", icon: "List", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
+        const bobotSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Bobot"]), 0) * 100;
+        m4 = { label: "Bobot Kumulatif", value: bobotSum.toFixed(2) + "%", numericValue: bobotSum, formatter: v => v.toFixed(2) + "%", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
       }
     }
 
@@ -645,7 +691,13 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
           <div key={index} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded shadow-sm flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">{met.label}</span>
-              <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">{met.value}</h5>
+              <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                {met.numericValue !== undefined ? (
+                  <AnimatedCounter value={met.numericValue} formatter={met.formatter} />
+                ) : (
+                  met.value
+                )}
+              </h5>
             </div>
             <div className={`p-2 rounded ${met.color.replace("bg-indigo-50/70", "bg-blue-50/80").replace("bg-sky-50/70", "bg-cyan-50/60").replace("bg-emerald-50/70", "bg-green-50/70")}`}>
               {selectMetricIcon(met.icon)}

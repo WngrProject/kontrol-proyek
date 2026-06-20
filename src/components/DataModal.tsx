@@ -164,29 +164,6 @@ export default function DataModal({ isOpen, onClose, viewId, editData, onSave }:
       );
     }
 
-    if (viewId === "jrp-jobj-boq" || viewId === "surge-fm-expole-boq" || viewId === "surge-fm-newpole-boq") {
-      return (
-        <>
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Item Pekerjaan</label>
-            <input type="text" name="Item Pekerjaan" value={formData["Item Pekerjaan"] || ""} onChange={handleChange} className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:border-indigo-500" required />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Satuan</label>
-            <input type="text" name="Satuan" value={formData["Satuan"] || ""} onChange={handleChange} placeholder="Pcs / Mtr" className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:border-indigo-500" required />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Harga Satuan</label>
-            <input type="number" step="any" name="Harga Satuan" value={formData["Harga Satuan"] || ""} onChange={handleChange} className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:border-indigo-500" />
-          </div>
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Keterangan</label>
-            <textarea name="Keterangan" value={formData["Keterangan"] || ""} onChange={handleChange} rows={2} className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:border-indigo-500" />
-          </div>
-        </>
-      );
-    }
-
     if (viewId === "jrp-jobj-bon-material") {
       return (
         <>
