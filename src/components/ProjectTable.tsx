@@ -682,7 +682,7 @@ export default function ProjectTable({ data, viewId, loading, onEdit, onDelete, 
     } else if (viewId === "jrp-jobj-spk") {
       const spkSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Nilai BoQ"]), 0);
       const totalCluster = new Set(filteredAndSortedData.map(r => r["Nama Cluster"]).filter(Boolean)).size;
-      const bobotSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Bobot"]), 0);
+      const bobotSum = filteredAndSortedData.reduce((tot, r) => tot + parseNum(r["Bobot"]), 0) * 100;
       m2 = { label: "Total Nilai BoQ", value: "Rp " + formatCurrency(spkSum), numericValue: spkSum, formatter: v => "Rp " + formatCurrency(v), icon: "Briefcase", color: "text-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30" };
       m3 = { label: "Total Cluster", value: String(totalCluster) + " Cluster", numericValue: totalCluster, formatter: v => Math.round(v) + " Cluster", icon: "MapPin", color: "text-sky-500 bg-sky-50/70 dark:bg-sky-950/30" };
       m4 = { label: "Bobot Kumulatif", value: bobotSum.toFixed(2) + "%", numericValue: bobotSum, formatter: v => v.toFixed(2) + "%", icon: "TrendingUp", color: "text-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30" };
